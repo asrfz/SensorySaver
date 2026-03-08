@@ -259,6 +259,124 @@
             0%, 100% { transform: scale(1); opacity: 0.85; }
             50%      { transform: scale(1.1); opacity: 1; }
         }
+
+        .complete-text {
+            margin-top: 20px;
+            font-size: 22px;
+            font-weight: 300;
+            color: #999;
+        }
+
+        .play-btn {
+            margin-top: 36px;
+            width: 70px;
+            height: 70px;
+            border: none;
+            border-radius: 50%;
+            background: #b8a9c9;
+            color: #fff;
+            font-size: 28px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .play-btn:hover {
+            transform: scale(1.08);
+            box-shadow: 0 6px 24px rgba(184,169,201,0.4);
+        }
+
+        .play-btn.playing {
+            background: #999;
+        }
+
+        /* ── 7 · Agent Chat ── */
+
+        #agent-screen {
+            background: #f5f0eb;
+        }
+
+        .agent-header {
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .agent-header h2 {
+            font-size: 24px;
+            font-weight: 400;
+            color: #555;
+            margin-bottom: 8px;
+        }
+
+        .agent-header p {
+            font-size: 15px;
+            font-weight: 300;
+            color: #b0b0b0;
+        }
+
+        .agent-widget-container {
+            width: 100%;
+            max-width: 500px;
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .start-talk-btn {
+            margin-top: 40px;
+            padding: 18px 48px;
+            border: none;
+            border-radius: 50px;
+            background: #b8a9c9;
+            color: #fff;
+            font-family: 'Outfit', sans-serif;
+            font-size: 18px;
+            font-weight: 400;
+            cursor: pointer;
+            letter-spacing: 1px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .start-talk-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 28px rgba(184,169,201,0.4);
+        }
+
+        .start-talk-btn .mic-icon {
+            margin-right: 10px;
+            font-size: 20px;
+        }
+
+        .book-btn {
+            margin-top: 28px;
+            padding: 14px 36px;
+            border: 2px solid #b8a9c9;
+            border-radius: 40px;
+            background: transparent;
+            color: #b8a9c9;
+            font-family: 'Outfit', sans-serif;
+            font-size: 15px;
+            font-weight: 400;
+            cursor: pointer;
+            letter-spacing: 0.5px;
+            transition: all 0.2s ease;
+        }
+
+        .book-btn:hover {
+            background: #b8a9c9;
+            color: #fff;
+            transform: scale(1.03);
+        }
+
+        .booked-msg {
+            margin-top: 16px;
+            font-size: 14px;
+            font-weight: 300;
+            color: #7ab648;
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -333,7 +451,28 @@
     <!-- ─── 6 · Complete ─── -->
     <div id="complete" class="screen">
         <div class="music-note">&#9834;</div>
+        <p class="complete-text">you did amazing.</p>
+        <button class="play-btn" id="play-btn">&#9654;</button>
+        <p id="play-label" style="margin-top:10px;font-size:13px;color:#bbb;font-weight:300;">tap to play soothing sounds</p>
     </div>
+
+    <audio id="bg-music" src="/audio/soothing_music.mp3" preload="auto" loop></audio>
+    <audio id="bg-voice" src="/audio/calming_message.mp3" preload="auto"></audio>
+
+    <!-- ─── 7 · Agent Chat ─── -->
+    <div id="agent-screen" class="screen">
+        <div class="agent-header">
+            <h2>let's talk about it</h2>
+            <p>tell me what happened — i'll listen.</p>
+        </div>
+        <button class="start-talk-btn" id="start-talk"><span class="mic-icon">&#127908;</span>start talking</button>
+        <div class="agent-widget-container" id="agent-widget-wrap" style="display:none;">
+            <elevenlabs-convai agent-id="agent_5601kk6df874eq0snhytmfwm3erq"></elevenlabs-convai>
+        </div>
+        <button class="book-btn" id="book-btn">book appointment with a waterloo therapist</button>
+        <p class="booked-msg" id="booked-msg">&#10003; appointment request sent — a therapist will reach out soon.</p>
+    </div>
+    <script src="https://unpkg.com/@elevenlabs/convai-widget-embed" async type="text/javascript"></script>
 
 <script>
 (function () {
@@ -396,9 +535,49 @@
         needleG.style.transform = 'rotate(' + angle + 'deg)';
     }
 
+    var musicAudio = document.getElementById('bg-music');
+    var voiceAudio = document.getElementById('bg-voice');
+    musicAudio.volume = 0.3;
+
     document.getElementById('splash').addEventListener('click', function () {
         go('home');
         if (!polling) { polling = true; poll(); }
+    });
+
+    document.getElementById('play-btn').addEventListener('click', function () {
+        var btn = this;
+        btn.classList.add('playing');
+        btn.innerHTML = '&#9646;&#9646;';
+        document.getElementById('play-label').textContent = 'playing...';
+        musicAudio.currentTime = 0;
+        musicAudio.play();
+        setTimeout(function () {
+            voiceAudio.currentTime = 0;
+            voiceAudio.play();
+        }, 1500);
+        voiceAudio.onended = function () {
+            setTimeout(function () {
+                musicAudio.pause();
+                go('agent-screen');
+            }, 2000);
+        };
+    });
+
+    document.getElementById('start-talk').addEventListener('click', function () {
+        this.style.display = 'none';
+        document.getElementById('agent-widget-wrap').style.display = 'flex';
+        setTimeout(function () {
+            var widget = document.querySelector('elevenlabs-convai');
+            if (widget && widget.shadowRoot) {
+                var btn = widget.shadowRoot.querySelector('button');
+                if (btn) btn.click();
+            }
+        }, 500);
+    });
+
+    document.getElementById('book-btn').addEventListener('click', function () {
+        this.style.display = 'none';
+        document.getElementById('booked-msg').style.display = 'block';
     });
 
     document.querySelector('.help-btn').addEventListener('click', function () {

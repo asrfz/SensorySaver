@@ -1,9 +1,9 @@
-from flask import Flask, request, jsonify, send_file
+from flask import Flask, request, jsonify, send_file, send_from_directory
 from datetime import datetime
-import threading
-from elevenlabs_service import run_calming_sequence, precache_audio
+import os
+from elevenlabs_service import precache_audio
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder="audio_cache", static_url_path="/audio")
 
 @app.route("/")
 def index():
@@ -43,7 +43,6 @@ def arduino_trigger():
     if session["grip_count"] >= session["grip_needed"]:
         session["state"] = "complete"
         print("GROUNDING COMPLETE")
-        threading.Thread(target=run_calming_sequence, daemon=True).start()
 
     return jsonify({
         "ok": True,

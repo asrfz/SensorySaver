@@ -22,7 +22,7 @@ class MonitoringActivity : AppCompatActivity() {
     private lateinit var smartSpectraView: SmartSpectraView
     private val client = OkHttpClient()
 
-    private val backendUrl = "http://10.200.10.34:5000/trigger"   // CHANGE
+    private val backendUrl = "http://172.20.10.2:5000/trigger"   // CHANGE
     private val apiKey = "2BwfYdU0gG7QXEEi8wIwD1FUgpUWhd3y5A30zGb8"                           // CHANGE
 
     private var isMonitoring = true

@@ -101,16 +101,16 @@ def run_calming_sequence():
     music_path = os.path.join(AUDIO_DIR, "soothing_music.mp3")
     message_path = os.path.join(AUDIO_DIR, "calming_message.mp3")
 
-    _music(MUSIC_PROMPT, 15000, music_path)
+    _music(MUSIC_PROMPT, 5000, music_path)
     _tts(CALMING_MESSAGE, message_path)
-
-    if music_path and os.path.exists(music_path):
-        print("Playing soothing music...")
-        _play(music_path)
 
     if message_path and os.path.exists(message_path):
         print("Playing calming message...")
         _play(message_path)
+
+    if music_path and os.path.exists(music_path):
+        print("Playing soothing music...")
+        _play(music_path)
 
     print("Calming sequence complete.")
 
@@ -119,7 +119,7 @@ def precache_audio():
     """Pre-generate audio at startup so there's no delay after grounding."""
     def _cache():
         _tts(CALMING_MESSAGE, os.path.join(AUDIO_DIR, "calming_message.mp3"))
-        _music(MUSIC_PROMPT, 15000, os.path.join(AUDIO_DIR, "soothing_music.mp3"))
+        _music(MUSIC_PROMPT, 5000, os.path.join(AUDIO_DIR, "soothing_music.mp3"))
         print("Audio pre-cached and ready")
 
     threading.Thread(target=_cache, daemon=True).start()
