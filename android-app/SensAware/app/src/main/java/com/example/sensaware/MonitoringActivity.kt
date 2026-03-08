@@ -22,18 +22,15 @@ class MonitoringActivity : AppCompatActivity() {
     private lateinit var smartSpectraView: SmartSpectraView
     private val client = OkHttpClient()
 
-    // CHANGE THESE
-    private val backendUrl = "http://10.200.10.34:5000/vitals"
-    private val apiKey = "2BwfYdU0gG7QXEEi8wIwD1FUgpUWhd3y5A30zGb8"
+    private val backendUrl = "http://192.168.1.23:5000/trigger"   // CHANGE THIS
+    private val apiKey = "YOUR_API_KEY"                           // CHANGE THIS
 
     private var isMonitoring = true
     private var thresholdTriggered = false
 
-    // Demo-friendly thresholds:
-    // high enough to avoid instant trigger,
-    // low enough that intentional faster breathing can trigger
-    private val pulseThreshold = 100f
-    private val breathingThreshold = 27f
+    // demo-friendly thresholds
+    private val pulseThreshold = 90f
+    private val breathingThreshold = 18f
 
     private val smartSpectraSdk = SmartSpectraSdk.getInstance().apply {
         setApiKey(apiKey)
@@ -67,53 +64,31 @@ class MonitoringActivity : AppCompatActivity() {
 
         if (latestPulse == null || latestBreathing == null) return
 
-        Log.d(
-            "SensAware",
-            "Vitals → HR=$latestPulse | BR=$latestBreathing"
-        )
+        Log.d("SensAware", "HR=$latestPulse | BR=$latestBreathing")
 
         val thresholdMet =
             latestPulse >= pulseThreshold ||
-                    latestBreathing >= breathingThreshold
-
-        sendVitalsToBackend(
-            pulse = latestPulse,
-            breathing = latestBreathing,
-            thresholdMet = thresholdMet
-        )
+            latestBreathing >= breathingThreshold
 
         if (thresholdMet && !thresholdTriggered) {
             thresholdTriggered = true
             isMonitoring = false
 
-            Log.d("SensAware", "⚠️ THRESHOLD TRIGGERED")
+            Log.d("SensAware", "TRIGGERED")
 
-            sendThresholdEventToBackend(
-                pulse = latestPulse,
-                breathing = latestBreathing
-            )
+            sendTriggerToBackend()
 
-            val intent = Intent(this, AlertActivity::class.java).apply {
-                putExtra("heart_rate", latestPulse)
-                putExtra("breathing_rate", latestBreathing)
-            }
+            val intent = Intent(this, AlertActivity::class.java)
             startActivity(intent)
             finish()
         }
     }
 
-    private fun sendVitalsToBackend(
-        pulse: Float,
-        breathing: Float,
-        thresholdMet: Boolean
-    ) {
+    private fun sendTriggerToBackend() {
         thread {
             try {
                 val json = JSONObject().apply {
-                    put("heart_rate", pulse)
-                    put("breathing_rate", breathing)
-                    put("threshold_met", thresholdMet)
-                    put("timestamp", System.currentTimeMillis())
+                    put("triggered", true)
                 }
 
                 val body = json.toString()
@@ -124,41 +99,11 @@ class MonitoringActivity : AppCompatActivity() {
                     .post(body)
                     .build()
 
-                client.newCall(request).execute().use {
-                    Log.d("SensAware", "Sent vitals")
+                client.newCall(request).execute().use { response ->
+                    Log.d("SensAware", "Trigger sent -> ${response.code}")
                 }
             } catch (e: Exception) {
-                Log.e("SensAware", "Backend send failed", e)
-            }
-        }
-    }
-
-    private fun sendThresholdEventToBackend(
-        pulse: Float,
-        breathing: Float
-    ) {
-        thread {
-            try {
-                val json = JSONObject().apply {
-                    put("event", "threshold_triggered")
-                    put("heart_rate", pulse)
-                    put("breathing_rate", breathing)
-                    put("timestamp", System.currentTimeMillis())
-                }
-
-                val body = json.toString()
-                    .toRequestBody("application/json".toMediaType())
-
-                val request = Request.Builder()
-                    .url(backendUrl)
-                    .post(body)
-                    .build()
-
-                client.newCall(request).execute().use {
-                    Log.d("SensAware", "Threshold event sent")
-                }
-            } catch (e: Exception) {
-                Log.e("SensAware", "Threshold send failed", e)
+                Log.e("SensAware", "Trigger send failed", e)
             }
         }
     }

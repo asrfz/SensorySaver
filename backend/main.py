@@ -2,18 +2,22 @@ from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
-@app.route("/vitals", methods=["POST"])
-def vitals():
+last_trigger = {
+    "triggered": False
+}
+
+@app.route("/trigger", methods=["POST"])
+def trigger():
     data = request.get_json(force=True)
-    print("Received:", data)
+    last_trigger["triggered"] = data.get("triggered", False)
 
-    if data.get("event") == "threshold_triggered":
-        print("ALERT: threshold reached!")
-        # play ElevenLabs audio
-        # start calming flow
-        # trigger dashboard update
+    print("Received trigger:", last_trigger["triggered"])
 
-    return jsonify({"ok": True})
+    return jsonify({"ok": True, "triggered": last_trigger["triggered"]})
+
+@app.route("/state", methods=["GET"])
+def state():
+    return jsonify(last_trigger)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
